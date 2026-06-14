@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Environment configurations
+.env
+.env.local
+
+# Logs
+logs/
+*.log
+
+# Runtime/Cache data
+data/temp/
+data/posted_ids.json
