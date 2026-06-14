@@ -4,8 +4,9 @@ const logger = require('./logger');
 const GRAPH_API_BASE = 'https://graph.facebook.com/v19.0';
 
 class FacebookFetcher {
-  constructor(sourcePageId) {
+  constructor(sourcePageId, accessToken) {
     this.sourcePageId = sourcePageId;
+    this.accessToken = accessToken;
   }
 
   /**
@@ -26,7 +27,7 @@ class FacebookFetcher {
           'permalink_url'
         ].join(','),
         limit,
-        // public data only — no token needed for public pages
+        access_token: this.accessToken
       };
 
       logger.debug(`Fetching posts from page: ${this.sourcePageId}`);

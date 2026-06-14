@@ -6,7 +6,10 @@ const logger = require('./logger');
 
 class RepostBot {
   constructor() {
-    this.fetcher = new FacebookFetcher(process.env.SOURCE_PAGE_ID);
+    this.fetcher = new FacebookFetcher(
+      process.env.SOURCE_PAGE_ID,
+      process.env.DEST_PAGE_ACCESS_TOKEN
+    );
     this.poster = new FacebookPoster(
       process.env.DEST_PAGE_ID,
       process.env.DEST_PAGE_ACCESS_TOKEN
