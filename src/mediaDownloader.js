@@ -60,9 +60,55 @@ class MediaDownloader {
    * Video download
    */
   async downloadVideo(videoUrl, postId) {
-    const ext = this.getExtension(videoUrl) || 'mp4';
+    const directUrl = await this.resolveDirectVideoUrl(videoUrl);
+    let ext = this.getExtension(directUrl);
+    if (!['mp4', 'mov'].includes(ext)) {
+      ext = 'mp4'; // Force mp4 for Facebook video streaming sources
+    }
     const filename = `${postId}_video.${ext}`;
-    return await this.download(videoUrl, filename);
+    return await this.download(directUrl, filename);
+  }
+
+  /**
+   * Resolves a public Facebook video URL to a direct downloadable MP4 link by scraping the page HTML.
+   * Prioritizes HD quality and falls back to SD.
+   */
+  async resolveDirectVideoUrl(url) {
+    if (url.includes('.fbcdn.net') || url.includes('.mp4')) {
+      return url; // Already a direct CDN link
+    }
+
+    if (url.includes('facebook.com')) {
+      try {
+        logger.debug(`Scraping FB video page to resolve direct MP4 link: ${url}`);
+        const response = await axios.get(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          },
+          timeout: 15000
+        });
+        const html = response.data;
+
+        // Try HD quality URL first
+        let videoMatch = html.match(/"playable_url_quality_hd":"(https:[^"]+)"/);
+        if (!videoMatch) {
+          // Fallback to SD quality URL
+          videoMatch = html.match(/"playable_url":"(https:[^"]+)"/);
+        }
+
+        if (videoMatch && videoMatch[1]) {
+          const directUrl = videoMatch[1].replace(/\\/g, '');
+          logger.debug(`Successfully resolved direct FB video link: ${directUrl.substring(0, 80)}...`);
+          return directUrl;
+        } else {
+          logger.warn(`Could not find playable_url in FB HTML source`);
+        }
+      } catch (err) {
+        logger.error(`Error resolving FB video url: ${err.message}`);
+      }
+    }
+
+    return url; // Fallback to original URL
   }
 
   /**

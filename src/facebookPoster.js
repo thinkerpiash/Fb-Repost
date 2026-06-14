@@ -36,17 +36,30 @@ class FacebookPoster {
    */
   async postSingleImage(imagePath, caption) {
     try {
+      // Step 1: Upload photo as unpublished
       const form = new FormData();
       form.append('source', fs.createReadStream(imagePath));
-      form.append('message', caption);
+      form.append('published', 'false');
       form.append('access_token', this.accessToken);
 
-      const response = await axios.post(
+      const uploadRes = await axios.post(
         `${GRAPH_API_BASE}/${this.pageId}/photos`,
         form,
         { headers: form.getHeaders(), timeout: 60000 }
       );
-      logger.info(`Single photo post published: ${response.data.id}`);
+      const photoId = uploadRes.data.id;
+      logger.debug(`Uploaded single photo as unpublished: ${photoId}`);
+
+      // Step 2: Publish to page timeline feed
+      const response = await axios.post(
+        `${GRAPH_API_BASE}/${this.pageId}/feed`,
+        {
+          message: caption,
+          attached_media: [{ media_fbid: photoId }],
+          access_token: this.accessToken
+        }
+      );
+      logger.info(`Single photo post published on timeline: ${response.data.id}`);
       return response.data.id;
     } catch (err) {
       this._logApiError('postSingleImage', err);
