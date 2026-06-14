@@ -7,6 +7,7 @@ const STATE_FILE = path.join(__dirname, '../data/posted_ids.json');
 class StateManager {
   constructor() {
     this.postedIds = new Set();
+    this.installedAt = null;
     this.load();
   }
 
@@ -16,14 +17,17 @@ class StateManager {
         const raw = fs.readFileSync(STATE_FILE, 'utf8');
         const data = JSON.parse(raw);
         this.postedIds = new Set(data.postedIds || []);
+        this.installedAt = data.installedAt || new Date().toISOString();
         logger.info(`State loaded: ${this.postedIds.size} previously reposted IDs`);
       } else {
         logger.info('No previous state found, starting fresh');
+        this.installedAt = new Date().toISOString();
         this.save();
       }
     } catch (err) {
       logger.error(`Failed to load state: ${err.message}`);
       this.postedIds = new Set();
+      this.installedAt = new Date().toISOString();
     }
   }
 
@@ -31,6 +35,7 @@ class StateManager {
     try {
       const data = {
         postedIds: [...this.postedIds],
+        installedAt: this.installedAt,
         lastUpdated: new Date().toISOString()
       };
       fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
@@ -38,6 +43,10 @@ class StateManager {
     } catch (err) {
       logger.error(`Failed to save state: ${err.message}`);
     }
+  }
+
+  getInstalledAt() {
+    return this.installedAt;
   }
 
   hasPosted(postId) {

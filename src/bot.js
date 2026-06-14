@@ -68,6 +68,18 @@ class RepostBot {
       return;
     }
 
+    // Skip posts older than bot installation time
+    if (post.created_time) {
+      const postTime = new Date(post.created_time).getTime();
+      const installedTime = new Date(stateManager.getInstalledAt()).getTime();
+      if (postTime < installedTime) {
+        stateManager.markPosted(postId);
+        this.stats.skipped++;
+        logger.info(`Skipped (older than installation date): ${postId}`);
+        return;
+      }
+    }
+
     const postType = this.fetcher.detectPostType(post);
     const caption = this.fetcher.extractCaption(post);
     const mediaUrls = this.fetcher.extractMediaUrls(post);
